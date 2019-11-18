@@ -51,8 +51,9 @@ models_urls = {
 
 
 class FaceAlignment:
+    #! changed
     def __init__(self, landmarks_type, network_size=NetworkSize.LARGE,
-                 device='cuda', flip_input=False, face_detector='sfd', verbose=False):
+                 device='cuda', path_to_model=False, path_to_detector=None, flip_input=False, face_detector='sfd', verbose=False):
         self.device = device
         self.flip_input = flip_input
         self.landmarks_type = landmarks_type
@@ -66,7 +67,8 @@ class FaceAlignment:
         # Get the face detector
         face_detector_module = __import__('face_alignment.detection.' + face_detector,
                                           globals(), locals(), [face_detector], 0)
-        self.face_detector = face_detector_module.FaceDetector(device=device, verbose=verbose)
+        #! changed
+        self.face_detector = face_detector_module.FaceDetector(device=device, verbose=verbose, path_to_detector=path_to_detector)
 
         # Initialise the face alignemnt networks
         self.face_alignment_net = FAN(network_size)
@@ -75,7 +77,13 @@ class FaceAlignment:
         else:
             network_name = '3DFAN-' + str(network_size)
 
-        fan_weights = load_url(models_urls[network_name], map_location=lambda storage, loc: storage)
+        #! changed
+        #fan_weights = load_url(models_urls[network_name], map_location=lambda storage, loc: storage)
+        if path_to_model:
+            fan_weights = torch.load(path_to_model, map_location=torch.device('cpu'))
+        else: 
+            fan_weights = load_url(models_urls[network_name], map_location=lambda storage, loc: storage)
+        
         self.face_alignment_net.load_state_dict(fan_weights)
 
         self.face_alignment_net.to(device)
